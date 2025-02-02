@@ -1,12 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask App</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Gallery Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .input-container {
+            margin-bottom: 20px;
+        }
+
+        .input-container input {
+            padding: 10px;
+            font-size: 16px;
+            width: 250px;
+            margin-right: 10px;
+            border-radius: 5px;
+        }
+
+        .input-container button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .input-container button:hover {
+            background-color: #0056b3;
+        }
+
+        .viewer {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>Welcome to Flask!</h1>
+
+    <h2>Gallery Viewer</h2>
+
+    <!-- Input for Gallery ID -->
+    <div class="input-container">
+        <input type="text" id="galleryId" placeholder="Enter Gallery ID">
+        <button onclick="submitGalleryId()">Submit</button>
+    </div>
+
+    <!-- Placeholder for Gallery Viewer Message -->
+    <div class="viewer" id="imageViewer" style="width: 80%; height: 500px; overflow-y: auto; border: 2px solid #ddd; padding: 10px; margin: auto;">
+        <p>Images will be displayed here...</p>
+    </div>
+
+    <script>
+        async function submitGalleryId() {
+            const galleryId = document.getElementById('galleryId').value;
+
+            if (!galleryId) {
+                alert('Please enter a Gallery ID');
+                return;
+            }
+
+            console.log('Gallery ID submitted:', galleryId);
+
+            try {
+                // Step 1: Call the API to get the pattern base URL
+                const response = await fetch(`/pattern?gallery_id=${galleryId}`);
+
+                if (!response.ok) {
+                    throw new Error('API request failed');
+                }
+
+                const data = await response.json();
+                const patternBaseUrl = data['patternUrl'];
+                console.log("Pattern Base URL:", patternBaseUrl);
+
+                // Step 2: Fetch images concurrently from index 1 to n in batches
+                const batchSize = 10;  // Limit number of concurrent requests per batch
+                let index = 1;
+                let imageFound = true;
+                const imageUrls = [];
+
+                // Function to fetch a single image
+                const fetchImage = async (imageUrl) => {
+                     // Updated to replace $index correctly
+                    try {
+                        const imageResponse = await fetch(imageUrl);
+                        return imageResponse;
+                    } catch (error) {
+                        console.log("Not found data with url", imageUrl)
+                    }
+
+                };
+
+                // Function to handle concurrency (fetch a batch of images concurrently)
+                const fetchImagesConcurrently = async () => {
+                    let allBatchFailed = false;
+
+                    while (imageFound && !allBatchFailed) {
+                        const promises = [];
+                        const batchUrls=[];
+                        let currentBatch = [];
+
+                        // Fetch a batch of images concurrently
+                        for (let i = 0; i < batchSize; i++) {
+                            const imageUrl = patternBaseUrl.replace("$index", index); 
+                            batchUrls.push(imageUrl);
+                            currentBatch.push(fetchImage(imageUrl));
+                            index++;
+                        }
+
+                        promises.push(...currentBatch);
+
+                        // Wait for the current batch of requests to finish
+                        const results = await Promise.all(promises);
+                        let failedBatchCount = 0;
+                        results.forEach((result,i) => {
+                            if (result?.ok) {
+                                imageUrls.push(batchUrls[i]);
+                            } else {
+                                ++failedBatchCount;
+                            }
+                        });
+
+                        if (failedBatchCount == batchSize) {
+                            console.log("End batch at", index);
+                            allBatchFailed = true;  // Stop if the entire batch failed
+                            break;  // Exit the loop if all images in the batch are 404
+                        }
+
+
+                    }
+                    const imageViewer = document.getElementById('imageViewer');
+                    // Step 3: Display the message in the viewer
+                    if (imageUrls.length > 0) {
+                        imageViewer.innerHTML = `
+                    <p>Found ${imageUrls.length} patterns for Gallery ID: ${galleryId}</p>
+                    ${imageUrls.map((url,i) => `<img src="${url}" alt="${i+".png"}"/>`)}
+                `;
+                    } else {
+                        imageViewer.innerHTML = `
+                    <p>No patterns found for Gallery ID: ${galleryId}</p>
+                `;
+                    }
+                };
+
+                await fetchImagesConcurrently();
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                document.getElementById('imageViewer').innerHTML = `
+            <p>Error fetching gallery. Please try again later.</p>
+        `;
+            }
+        }
+    </script>
+
 </body>
+
 </html>
