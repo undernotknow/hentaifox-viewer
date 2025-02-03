@@ -57,8 +57,10 @@
     </div>
 
     <!-- Placeholder for Gallery Viewer Message -->
-    <div class="viewer" id="imageViewer" style="width: 80%; height: 500px; overflow-y: auto; border: 2px solid #ddd; padding: 10px; margin: auto;">
-        <p>Images will be displayed here...</p>
+    <div class="viewer" id="imageViewer"
+        style="width: 80%; height: 500px; overflow-y: auto; border: 2px solid #ddd; padding: 10px; margin: auto;">
+        <p id="gallery_msg">Images will be displayed here...</p>
+        <div id="gallery_content"></div>
     </div>
 
     <script>
@@ -92,7 +94,7 @@
 
                 // Function to fetch a single image
                 const fetchImage = async (imageUrl) => {
-                     // Updated to replace $index correctly
+                    // Updated to replace $index correctly
                     try {
                         const imageResponse = await fetch(imageUrl);
                         return imageResponse;
@@ -104,16 +106,20 @@
 
                 // Function to handle concurrency (fetch a batch of images concurrently)
                 const fetchImagesConcurrently = async () => {
+                    const galleryContentDiv = document.getElementById('gallery_content')
+
+                    /// clear all content first
+                    galleryContentDiv.innerHTML = '';
                     let allBatchFailed = false;
 
                     while (imageFound && !allBatchFailed) {
                         const promises = [];
-                        const batchUrls=[];
+                        const batchUrls = [];
                         let currentBatch = [];
 
                         // Fetch a batch of images concurrently
                         for (let i = 0; i < batchSize; i++) {
-                            const imageUrl = patternBaseUrl.replace("$index", index); 
+                            const imageUrl = patternBaseUrl.replace("$index", index);
                             batchUrls.push(imageUrl);
                             currentBatch.push(fetchImage(imageUrl));
                             index++;
@@ -124,9 +130,16 @@
                         // Wait for the current batch of requests to finish
                         const results = await Promise.all(promises);
                         let failedBatchCount = 0;
-                        results.forEach((result,i) => {
+                        results.forEach((result, i) => {
                             if (result?.ok) {
+                                /// add success url to batch
                                 imageUrls.push(batchUrls[i]);
+                              const   newImg=document.createElement('img',)
+                              newImg.src=batchUrls[i];
+                              newImg.alt=imageUrls.length + ".png";
+                                /// add success url and content
+                                galleryContentDiv.appendChild(newImg);
+
                             } else {
                                 ++failedBatchCount;
                             }
@@ -140,17 +153,12 @@
 
 
                     }
-                    const imageViewer = document.getElementById('imageViewer');
+                    const msgDiv = document.getElementById('gallery_msg');
                     // Step 3: Display the message in the viewer
                     if (imageUrls.length > 0) {
-                        imageViewer.innerHTML = `
-                    <p>Found ${imageUrls.length} patterns for Gallery ID: ${galleryId}</p>
-                    ${imageUrls.map((url,i) => `<img src="${url}" alt="${i+".png"}"/>`)}
-                `;
+                        msgDiv.innerHTML = `Found ${imageUrls.length} patterns for Gallery ID: ${galleryId}`;
                     } else {
-                        imageViewer.innerHTML = `
-                    <p>No patterns found for Gallery ID: ${galleryId}</p>
-                `;
+                        msgDiv.innerHTML = `No patterns found for Gallery ID: ${galleryId}`;
                     }
                 };
 
@@ -158,9 +166,8 @@
 
             } catch (error) {
                 console.error('Error fetching data:', error);
-                document.getElementById('imageViewer').innerHTML = `
-            <p>Error fetching gallery. Please try again later.</p>
-        `;
+                document.getElementById('gallery_msg').innerHTML = `Error fetching gallery. Please try again later.`;
+
             }
         }
     </script>

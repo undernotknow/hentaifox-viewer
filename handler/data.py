@@ -11,11 +11,21 @@ def fetchHTML(url:str):
     else:
         raise Exception(f"Cannot fetch data from {url}")
 
-def getImageLinkPattern(html:bs):
+def getFirstImagePage(html:bs):
     galleryDiv= html.find('div',{'class':'display_gallery'})
     thumbDiv= galleryDiv.find('div',{'class':'gallery_thumb'})
-    pattern=str(thumbDiv.find('img')['data-src'])
-    return pattern
+    link=thumbDiv.find('a')['href']
+    return str(link)
+
+def getImageLinkPattern(html:bs):
+    firstImgLink=getFirstImagePage(html=html)
+    page=fetchHTML(f'{BASE_URL}{firstImgLink}')
+    fullImgDiv=page.find('div',{'class':'full_image'})
+    img=fullImgDiv.find('img')
+    # galleryDiv= html.find('div',{'class':'display_gallery'})
+    # thumbDiv= galleryDiv.find('div',{'class':'gallery_thumb'})
+    # pattern=str(thumbDiv.find('img')['data-src'])
+    return str(img['data-src'])
 
 
 def processGalleryById(id:str):

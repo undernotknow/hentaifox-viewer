@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, request, url_for
+from flask import Flask, jsonify, make_response, render_template, request, url_for
 from handler.data import processGalleryById
 
 app = Flask(__name__)
@@ -21,10 +21,5 @@ def getImagePattern():
         'patternUrl':f"{'/'.join(head)}/$index.{extension}",
     })
 
-@app.get('/test')
-def testPattern():
-    pattern= processGalleryById('91487')
-    return pattern
-
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000,debug=True)
