@@ -111,7 +111,7 @@
                 // Function to handle concurrency (fetch a batch of images concurrently)
                 const fetchImagesConcurrently = async () => {
                     const galleryContentDiv = document.getElementById('gallery_content')
-
+                    const renderedImages=new Set();
                     /// clear all content first
                     galleryContentDiv.innerHTML = '';
                     let allBatchFailed = false;
@@ -137,7 +137,9 @@
                         results.forEach((result, i) => {
                             if (result?.ok) {
                                 /// add success url to batch
-                                imageUrls.push(batchUrls[i]);
+                                
+                                if(!renderedImages.has(batchUrls[i])){
+                                    imageUrls.push(batchUrls[i]);
                               const   newImg=document.createElement('img',)
                               newImg.src=batchUrls[i];
                               newImg.alt=imageUrls.length + ".png";
@@ -145,7 +147,8 @@
                                 galleryContentDiv.appendChild(newImg);
                                 newImg.className='img-content';
                                 newImg.loading='lazy';
-
+                                }
+                                renderedImages.add(batchUrls[i]);
                             } else {
                                 ++failedBatchCount;
                             }
