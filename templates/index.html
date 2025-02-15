@@ -43,6 +43,10 @@
             font-size: 18px;
             font-weight: bold;
         }
+        .img-content{
+            margin:auto;
+            width:80%;
+        }
     </style>
 </head>
 
@@ -58,7 +62,7 @@
 
     <!-- Placeholder for Gallery Viewer Message -->
     <div class="viewer" id="imageViewer"
-        style="width: 80%; height: 500px; overflow-y: auto; border: 2px solid #ddd; padding: 10px; margin: auto;">
+        style="width: 80%; height: 100vh; overflow-y: auto; border: 2px solid #ddd; padding: 10px; margin: auto;">
         <p id="gallery_msg">Images will be displayed here...</p>
         <div id="gallery_content"></div>
     </div>
@@ -139,6 +143,8 @@
                               newImg.alt=imageUrls.length + ".png";
                                 /// add success url and content
                                 galleryContentDiv.appendChild(newImg);
+                                newImg.className='img-content';
+                                newImg.loading='lazy';
 
                             } else {
                                 ++failedBatchCount;
