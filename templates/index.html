@@ -43,9 +43,10 @@
             font-size: 18px;
             font-weight: bold;
         }
-        .img-content{
-            margin:auto;
-            width:80%;
+
+        .img-content {
+            margin: auto;
+            width: 80%;
         }
     </style>
 </head>
@@ -107,10 +108,10 @@
                     }
 
                 };
-
+                const galleryContentDiv = document.getElementById('gallery_content')
+                const renderedImages = new Set();
                 // Function to handle concurrency (fetch a batch of images concurrently)
                 const fetchImagesConcurrently = async () => {
-                    const galleryContentDiv = document.getElementById('gallery_content')
 
                     /// clear all content first
                     galleryContentDiv.innerHTML = '';
@@ -137,15 +138,12 @@
                         results.forEach((result, i) => {
                             if (result?.ok) {
                                 /// add success url to batch
-                                imageUrls.push(batchUrls[i]);
-                              const   newImg=document.createElement('img',)
-                              newImg.src=batchUrls[i];
-                              newImg.alt=imageUrls.length + ".png";
-                                /// add success url and content
-                                galleryContentDiv.appendChild(newImg);
-                                newImg.className='img-content';
-                                newImg.loading='lazy';
 
+                                if (!renderedImages.has(batchUrls[i])) {
+                                    imageUrls.push(batchUrls[i]);
+                                    renderedImages.add(batchUrls[i]);
+                                }
+                                
                             } else {
                                 ++failedBatchCount;
                             }
@@ -155,6 +153,8 @@
                             console.log("End batch at", index);
                             allBatchFailed = true;  // Stop if the entire batch failed
                             break;  // Exit the loop if all images in the batch are 404
+                        }else{
+                            renderFetchedImage();
                         }
 
 
@@ -167,6 +167,49 @@
                         msgDiv.innerHTML = `No patterns found for Gallery ID: ${galleryId}`;
                     }
                 };
+
+                const tryParseInt=(n)=>{
+                    try{
+                      const n_int  =parseInt(n);
+                      if(!isNaN(n_int)){
+                        return n_int
+                      }
+
+                    }catch(err){
+
+                    }
+                    return -1;
+                }
+
+                const getImageIndex=(url)=>{
+                    const name= url.split('.')[0];
+                    const eles= name.split('/');
+                    return eles[eles.length-1];
+                }
+
+                const renderFetchedImage = () => {
+                   const imgUrls= Array.from(renderedImages).sort((a,b)=>{
+                        const a_n=getImageIndex(a);
+                        const b_n=getImageIndex(b);
+                        return tryParseInt(a_n)-tryParseInt(b_n);
+                   });
+
+                   console.log("Image lenth:",imgUrls.length);
+                   
+                    const imgElements= imgUrls.map((imgUrl, index) => {
+                        const newImg = document.createElement('img',)
+                        newImg.src = imgUrl;
+                        newImg.alt = (index + 1) + ".png";
+                        newImg.className = 'img-content';
+                        newImg.loading = 'lazy';
+
+                        return newImg;
+                    })
+
+                    galleryContentDiv.textContent='';
+                    galleryContentDiv.append(...imgElements)
+                    
+                }
 
                 await fetchImagesConcurrently();
 
